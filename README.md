@@ -36,6 +36,7 @@ java -cp bin ProductTest
 java -cp bin WishlistItemTest
 java -cp bin StoreSystemTest
 java -cp bin PaymentTest
+java -cp bin OrderFulfillmentTest
 ```
 
 For a demonstration using the assignment's exact commands, run them inside
@@ -72,8 +73,14 @@ if VS Code still shows old source locations.
 ## Implemented features
 
 The current program supports creating clients/products, adding or replacing
-wishlist quantities, recording payments, and displaying clients, products,
-wishlists, individual client details and transaction histories.
+wishlist quantities, reviewing and submitting client orders, recording
+payments, and displaying clients, products, wishlists, individual client
+details and transaction histories. Wishlist review lets the clerk change an
+existing item's quantity or add another catalog product. Submitting an order
+fulfills available stock, queues shortages FIFO per product, creates a dated
+invoice for supplied items at their captured unit prices, and clears the
+submitted wishlist. Automatic charges and shipment processing remain to be
+implemented.
 Use numeric IDs (1, 2, 3); C1/P1 in the assignment are example names.
 StoreSystem remains the single coordinator, keeping the Stage 1 structure.
 Small integration changes validate model data, protect collection membership,
@@ -84,6 +91,7 @@ Payment menu options:
 - **8:** Receive a client payment.
 - **9:** Display a client's details and balance.
 - **10:** Display a client's transactions.
+- **11:** Review and submit a client's order; change quantities or add products.
 
 Payments follow PreviousAssignments/ReceivePaymentFromAClient.pdf:
 find the client, show the current balance, request a positive amount, credit
@@ -99,7 +107,9 @@ Transactions store a date, description and signed amount: charges are positive,
 payments are negative. Client.debit is available for later fulfillment charges;
 checkout and shipment processing will call it when invoices are implemented.
 
-`PaymentTest` verifies the previous assignment's $200 balance examples:
+`OrderFulfillmentTest` verifies stock depletion, partial and zero-stock
+shortages, per-product FIFO ordering, and repeated checkout. `PaymentTest`
+verifies the previous assignment's $200 balance examples:
 
 - $100 payment -> $100 owed.
 - $200 payment -> $0 balance.

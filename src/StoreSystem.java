@@ -204,6 +204,64 @@ public class StoreSystem implements Serializable {
                 quantity);
     }
 
+    /** Updates the quantity for an existing wishlist product. */
+    public boolean updateWishlistQuantity(
+            int clientID,
+            int productID,
+            int quantity) {
+
+        Client client = findClient(clientID);
+        Product product = findProduct(productID);
+
+        if (client == null || product == null || quantity <= 0) {
+            return false;
+        }
+
+        return client.updateWishlistItemQuantity(productID, quantity);
+    }
+
+    /** Fulfills available stock and queues each shortage in product FIFO order. */
+    public List<OrderFulfillment> fillOrder(int clientID) {
+        Client client = requireClient(clientID);
+        List<WishlistItem> wishlist = client.getWishlistItems();
+        List<OrderFulfillment> results = new ArrayList<OrderFulfillment>();
+        List<Invoice.LineItem> invoiceLines = new ArrayList<Invoice.LineItem>();
+
+        for (WishlistItem item : wishlist) {
+            Product product = item.getProduct();
+            int requestedQuantity = item.getQuantity();
+            int suppliedQuantity = product.fulfillFromStock(requestedQuantity);
+            int waitlistedQuantity = requestedQuantity - suppliedQuantity;
+
+            if (waitlistedQuantity > 0) {
+                product.addWaitlistEntry(client, waitlistedQuantity);
+            }
+            if (suppliedQuantity > 0) {
+                invoiceLines.add(new Invoice.LineItem(product, suppliedQuantity));
+            }
+
+            results.add(new OrderFulfillment(product, requestedQuantity,
+                    suppliedQuantity, waitlistedQuantity));
+        }
+
+        if (!invoiceLines.isEmpty()) {
+            client.addInvoice(new Invoice(invoiceLines));
+        }
+        client.clearWishlist();
+        return Collections.unmodifiableList(results);
+    }
+
+    /** Returns the client's dated invoices. */
+    public List<Invoice> getInvoices(int clientID) {
+        return requireClient(clientID).getInvoices();
+    }
+
+    /** Returns a product's FIFO waitlist, or null when the product does not exist. */
+    public List<WaitlistEntry> getProductWaitlist(int productID) {
+        Product product = findProduct(productID);
+        return product == null ? null : product.getWaitlistEntries();
+    }
+
     /**
      * Returns an iterator for all clients.
      *

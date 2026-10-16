@@ -1,5 +1,6 @@
 import java.io.*;
 import java.math.BigDecimal;
+import java.util.*;
 
 /**
  * Represents a product in the warehouse system.
@@ -12,6 +13,7 @@ public class Product implements Serializable {
     private String name;
     private int quantityInStock;
     private BigDecimal salePrice;
+    private List<WaitlistEntry> waitlistEntries;
 
     /**
      * Creates a Product.
@@ -36,6 +38,7 @@ public class Product implements Serializable {
         this.name = name.trim();
         this.quantityInStock = quantityInStock;
         this.salePrice = Money.positive(salePrice);
+        this.waitlistEntries = new LinkedList<WaitlistEntry>();
     }
 
     /**
@@ -72,6 +75,27 @@ public class Product implements Serializable {
      */
     public BigDecimal getSalePrice() {
         return salePrice;
+    }
+
+    /** Supplies as many requested units as are currently in stock. */
+    public int fulfillFromStock(int requestedQuantity) {
+        if (requestedQuantity <= 0) {
+            throw new IllegalArgumentException("Requested quantity must be positive.");
+        }
+        int suppliedQuantity = Math.min(requestedQuantity, quantityInStock);
+        quantityInStock -= suppliedQuantity;
+        return suppliedQuantity;
+    }
+
+    /** Appends an unfilled request to this product's FIFO waitlist. */
+    public void addWaitlistEntry(Client client, int quantity) {
+        waitlistEntries.add(new WaitlistEntry(client, quantity));
+    }
+
+    /** Returns a read-only snapshot of this product's FIFO waitlist. */
+    public List<WaitlistEntry> getWaitlistEntries() {
+        return Collections.unmodifiableList(
+                new ArrayList<WaitlistEntry>(waitlistEntries));
     }
 
     /**
