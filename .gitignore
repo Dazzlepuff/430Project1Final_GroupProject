@@ -1,0 +1,9 @@
+# Compiled Java files and local tooling
+*.class
+/.tools/
+
+# Local VS Code settings contain this computer's JDK path
+/.vscode/settings.json
+
+# Future warehouse save file
+/WarehouseData
