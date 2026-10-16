@@ -1,5 +1,6 @@
 import java.util.*;
 import java.io.*;
+import java.math.BigDecimal;
 
 /**
  * Controls the warehouse system.
@@ -88,7 +89,7 @@ public class StoreSystem implements Serializable {
     public Product addProduct(
             String name,
             int quantityInStock,
-            double salePrice) {
+            BigDecimal salePrice) {
 
         Product product =
                 new Product(
@@ -130,6 +131,25 @@ public class StoreSystem implements Serializable {
         }
 
         return null;
+    }
+
+    /** Applies a payment to the specified account and returns its new balance. */
+    public BigDecimal receivePayment(int clientID, BigDecimal amount) {
+        Client client = requireClient(clientID);
+        client.credit(amount);
+        return client.getBalance();
+    }
+
+    public List<Transaction> getTransactions(int clientID) {
+        return requireClient(clientID).getTransactions();
+    }
+
+    private Client requireClient(int clientID) {
+        Client client = findClient(clientID);
+        if (client == null) {
+            throw new IllegalArgumentException("Client not found.");
+        }
+        return client;
     }
 
     /**

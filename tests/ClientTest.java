@@ -1,3 +1,5 @@
+import java.math.BigDecimal;
+
 /**
  * Driver used to test the Client class.
  */
@@ -9,10 +11,10 @@ public class ClientTest {
                 new Client(1, "C1", "100 Main Street");
 
         Product p1 =
-                new Product(1, "P1", 10, 1.00);
+                new Product(1, "P1", 10, new BigDecimal("1.00"));
 
         Product p2 =
-                new Product(2, "P2", 20, 2.00);
+                new Product(2, "P2", 20, new BigDecimal("2.00"));
 
         System.out.println("Client Test");
         System.out.println("-----------");

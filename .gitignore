@@ -1,5 +1,6 @@
 # Compiled Java files and local tooling
 *.class
+/bin/
 /.tools/
 
 # Local VS Code settings contain this computer's JDK path

@@ -1,9 +1,9 @@
 # Warehouse Project - Full Version (150 points)
 
 ## Foundation
-- [x] Bring the Stage 1 warehouse classes into the project root.
+- [x] Organize application classes in `src/`, test drivers in `tests/`, output in `bin/`.
 - [x] Use one coordinator (`StoreSystem`).
-- [x] Compile with `javac *.java`; run with `java UserInterface`.
+- [x] Compile and run using `README.md`; assignment commands also work inside `src/`.
 - [x] Keep input/output in the UI and business rules in the model.
 
 ## Features
@@ -13,13 +13,15 @@
 - [ ] Fill orders from stock; put shortages on each product's FIFO waitlist.
 - [ ] Clear processed wishlist entries to prevent duplicate orders.
 - [ ] Generate dated invoices for supplied items only; preserve unit prices.
-- [ ] Charge client balances and record dated transactions.
-- [ ] Record payments separately; allow overpayments to become client credit.
+- [x] Use `BigDecimal` for prices, balances, payments and transaction amounts.
+- [x] Support account debits/credits and record dated transactions.
+- [ ] Apply charges automatically when orders or waitlisted items are fulfilled.
+- [x] Record payments separately; allow overpayments to become client credit.
 - [ ] Receive shipments: fill waitlists first, invoice and charge each fulfillment,
       retain partially filled requests, then add leftovers to stock.
-- [ ] Display clients/balances, products/stock, wishlists, waitlists,
-      invoices, transaction histories, outstanding balances and quantities.
-- [ ] Validate IDs, quantities and money; use consistent money arithmetic.
+- [x] Display clients/balances, products/stock, wishlists and client transactions.
+- [ ] Display product waitlists, invoices, outstanding balances and quantities.
+- [x] Validate existing IDs, quantities and money; reject fractions of a cent.
 - [ ] Preserve data and ID counters when saving/loading (recommended).
 
 ## Verification and Submission

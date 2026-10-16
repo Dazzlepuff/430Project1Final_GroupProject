@@ -1,4 +1,5 @@
 import java.util.*;
+import java.math.BigDecimal;
 
 /**
  * Driver used to test the StoreSystem class.
@@ -65,19 +66,19 @@ public class StoreSystemTest {
          */
 
         store.addProduct(
-                "P1", 10, 1.00);
+                "P1", 10, new BigDecimal("1.00"));
 
         store.addProduct(
-                "P2", 20, 2.00);
+                "P2", 20, new BigDecimal("2.00"));
 
         store.addProduct(
-                "P3", 30, 3.00);
+                "P3", 30, new BigDecimal("3.00"));
 
         store.addProduct(
-                "P4", 40, 4.00);
+                "P4", 40, new BigDecimal("4.00"));
 
         store.addProduct(
-                "P5", 50, 5.00);
+                "P5", 50, new BigDecimal("5.00"));
 
 
         System.out.println();

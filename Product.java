@@ -1,16 +1,17 @@
 import java.io.*;
+import java.math.BigDecimal;
 
 /**
  * Represents a product in the warehouse system.
  */
 public class Product implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private int productID;
     private String name;
     private int quantityInStock;
-    private double salePrice;
+    private BigDecimal salePrice;
 
     /**
      * Creates a Product.
@@ -23,7 +24,7 @@ public class Product implements Serializable {
     public Product(int productID,
                    String name,
                    int quantityInStock,
-                   double salePrice) {
+                   BigDecimal salePrice) {
 
         if (productID <= 0 || name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("A positive product ID and name are required.");
@@ -31,14 +32,10 @@ public class Product implements Serializable {
         if (quantityInStock < 0) {
             throw new IllegalArgumentException("Stock cannot be negative.");
         }
-        if (!Double.isFinite(salePrice) || salePrice <= 0) {
-            throw new IllegalArgumentException("Price must be a finite amount greater than zero.");
-        }
-
         this.productID = productID;
         this.name = name.trim();
         this.quantityInStock = quantityInStock;
-        this.salePrice = salePrice;
+        this.salePrice = Money.positive(salePrice);
     }
 
     /**
@@ -73,7 +70,7 @@ public class Product implements Serializable {
      *
      * @return sale price
      */
-    public double getSalePrice() {
+    public BigDecimal getSalePrice() {
         return salePrice;
     }
 
@@ -89,7 +86,7 @@ public class Product implements Serializable {
                 + ", Quantity In Stock: "
                 + quantityInStock
                 + ", Sale Price: $"
-                + String.format("%.2f", salePrice);
+                + salePrice.toPlainString();
     }
 
     /**

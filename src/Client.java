@@ -1,18 +1,20 @@
 import java.util.*;
 import java.io.*;
+import java.math.BigDecimal;
 
 /**
  * Represents a client in the warehouse system.
  */
 public class Client implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private int clientID;
     private String name;
     private String address;
-    private double balance;
+    private BigDecimal balance;
     private List<WishlistItem> wishlistItems;
+    private List<Transaction> transactions;
 
     /**
      * Creates a Client.
@@ -32,9 +34,10 @@ public class Client implements Serializable {
         this.clientID = clientID;
         this.name = name.trim();
         this.address = address.trim();
-        this.balance = 0.0;
+        this.balance = new BigDecimal("0.00");
 
         wishlistItems = new LinkedList<WishlistItem>();
+        transactions = new LinkedList<Transaction>();
     }
 
     /**
@@ -69,8 +72,36 @@ public class Client implements Serializable {
      *
      * @return client balance
      */
-    public double getBalance() {
+    public BigDecimal getBalance() {
         return balance;
+    }
+
+    /** Records a payment; overpayments leave a negative balance (client credit). */
+    public void credit(BigDecimal amount) {
+        recordTransaction("Payment received", Money.positive(amount).negate());
+    }
+
+    /** Records a charge for future order and shipment fulfillment. */
+    public void debit(BigDecimal amount) {
+        recordTransaction("Charge recorded", Money.positive(amount));
+    }
+
+    private void recordTransaction(String description, BigDecimal amount) {
+        Transaction transaction = new Transaction(description, amount);
+        transactions.add(transaction);
+        balance = balance.add(transaction.getAmount());
+    }
+
+    public List<Transaction> getTransactions() {
+        return Collections.unmodifiableList(new ArrayList<Transaction>(transactions));
+    }
+
+    /** Shows a negative balance as an absolute credit amount for the clerk. */
+    public String getBalanceDetails() {
+        if (balance.signum() < 0) {
+            return "Credit: $" + balance.abs().toPlainString();
+        }
+        return "Balance: $" + balance.toPlainString();
     }
 
     /**
@@ -142,8 +173,7 @@ public class Client implements Serializable {
         return "Client ID: " + clientID
                 + ", Name: " + name
                 + ", Address: " + address
-                + ", Balance: $"
-                + String.format("%.2f", balance);
+                + ", " + getBalanceDetails();
     }
 
     /**

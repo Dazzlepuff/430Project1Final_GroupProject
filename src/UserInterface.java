@@ -1,5 +1,6 @@
 import java.util.*;
 import java.io.*;
+import java.math.BigDecimal;
 
 /**
  * Provides an interactive user interface
@@ -23,6 +24,9 @@ public class UserInterface {
     private static final int ADD_TO_WISHLIST = 5;
     private static final int SHOW_WISHLIST = 6;
     private static final int HELP = 7;
+    private static final int RECEIVE_PAYMENT = 8;
+    private static final int SHOW_CLIENT_DETAILS = 9;
+    private static final int SHOW_TRANSACTIONS = 10;
 
     /**
      * Creates the UserInterface.
@@ -115,12 +119,12 @@ public class UserInterface {
     }
 
     /**
-     * Reads a decimal number from the user.
+     * Reads a positive monetary amount directly as a decimal, without rounding.
      *
      * @param prompt prompt shown to the user
-     * @return decimal number entered
+     * @return validated amount in whole cents
      */
-    public double getDouble(String prompt) {
+    public BigDecimal getMoney(String prompt) {
 
         do {
 
@@ -129,12 +133,12 @@ public class UserInterface {
                 String item =
                         getToken(prompt);
 
-                return Double.parseDouble(item);
+                return Money.positive(new BigDecimal(item));
 
-            } catch (NumberFormatException nfe) {
+            } catch (IllegalArgumentException exception) {
 
                 System.out.println(
-                        "Please input a valid price.");
+                        "Enter a positive amount in whole cents (for example 10.50).");
             }
 
         } while (true);
@@ -159,7 +163,7 @@ public class UserInterface {
                                                 + " for help"));
 
                 if (value >= EXIT
-                        && value <= HELP) {
+                        && value <= SHOW_TRANSACTIONS) {
 
                     return value;
                 }
@@ -180,7 +184,7 @@ public class UserInterface {
 
         System.out.println();
         System.out.println(
-                "Enter a number between 0 and 7:");
+                "Enter a number between 0 and " + SHOW_TRANSACTIONS + ":");
 
         System.out.println(
                 EXIT + " to Exit");
@@ -207,6 +211,10 @@ public class UserInterface {
 
         System.out.println(
                 HELP + " for help");
+
+        System.out.println(RECEIVE_PAYMENT + " to receive a client payment");
+        System.out.println(SHOW_CLIENT_DETAILS + " to show a client's details and balance");
+        System.out.println(SHOW_TRANSACTIONS + " to show a client's transactions");
 
         System.out.println();
     }
@@ -276,8 +284,8 @@ public class UserInterface {
                 getNumber(
                         "Enter quantity in stock");
 
-        double price =
-                getDouble(
+        BigDecimal price =
+                getMoney(
                         "Enter unit price");
 
         Product result =
@@ -404,6 +412,42 @@ public class UserInterface {
         System.out.println();
     }
 
+    /** Follows the payment use case: find client, show balance, credit payment. */
+    public void receivePayment() {
+        int clientID = getNumber("Enter client ID");
+        Client client = storeSystem.findClient(clientID);
+        if (client == null) {
+            System.out.println("Client not found.");
+            return;
+        }
+        System.out.println(client.getBalanceDetails());
+        BigDecimal amount = getMoney("Enter payment amount");
+        storeSystem.receivePayment(clientID, amount);
+        System.out.println("Payment recorded.");
+        System.out.println(client.getBalanceDetails());
+    }
+
+    public void showClientDetails() {
+        Client client = storeSystem.findClient(getNumber("Enter client ID"));
+        if (client == null) {
+            System.out.println("Client not found.");
+            return;
+        }
+        System.out.println(client.getDetails());
+    }
+
+    public void showTransactions() {
+        List<Transaction> transactions =
+                storeSystem.getTransactions(getNumber("Enter client ID"));
+        if (transactions.isEmpty()) {
+            System.out.println("No transactions found.");
+            return;
+        }
+        for (Transaction transaction : transactions) {
+            System.out.println(transaction);
+        }
+    }
+
     /**
      * Processes commands until the user exits.
      */
@@ -437,6 +481,15 @@ public class UserInterface {
                             break;
                         case HELP:
                             help();
+                            break;
+                        case RECEIVE_PAYMENT:
+                            receivePayment();
+                            break;
+                        case SHOW_CLIENT_DETAILS:
+                            showClientDetails();
+                            break;
+                        case SHOW_TRANSACTIONS:
+                            showTransactions();
                             break;
                     }
                 } catch (IllegalArgumentException exception) {
