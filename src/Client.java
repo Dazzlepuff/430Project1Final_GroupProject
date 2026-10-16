@@ -15,6 +15,7 @@ public class Client implements Serializable {
     private BigDecimal balance;
     private List<WishlistItem> wishlistItems;
     private List<Transaction> transactions;
+    private List<Invoice> invoices;
 
     /**
      * Creates a Client.
@@ -38,6 +39,7 @@ public class Client implements Serializable {
 
         wishlistItems = new LinkedList<WishlistItem>();
         transactions = new LinkedList<Transaction>();
+        invoices = new LinkedList<Invoice>();
     }
 
     /**
@@ -94,6 +96,17 @@ public class Client implements Serializable {
 
     public List<Transaction> getTransactions() {
         return Collections.unmodifiableList(new ArrayList<Transaction>(transactions));
+    }
+
+    public void addInvoice(Invoice invoice) {
+        if (invoice == null) {
+            throw new IllegalArgumentException("An invoice is required.");
+        }
+        invoices.add(invoice);
+    }
+
+    public List<Invoice> getInvoices() {
+        return Collections.unmodifiableList(new ArrayList<Invoice>(invoices));
     }
 
     /** Shows a negative balance as an absolute credit amount for the clerk. */
@@ -153,6 +166,19 @@ public class Client implements Serializable {
         return true;
     }
 
+    /** Updates the quantity of an existing wishlist item. */
+    public boolean updateWishlistItemQuantity(int productID, int quantity) {
+        if (quantity <= 0) {
+            return false;
+        }
+        WishlistItem item = findWishlistItem(productID);
+        if (item == null) {
+            return false;
+        }
+        item.setQuantity(quantity);
+        return true;
+    }
+
     /**
      * Returns all wishlist items.
      *
@@ -161,6 +187,11 @@ public class Client implements Serializable {
     public List<WishlistItem> getWishlistItems() {
         return Collections.unmodifiableList(
                 new ArrayList<WishlistItem>(wishlistItems));
+    }
+
+    /** Removes the wishlist entries that have been submitted for fulfillment. */
+    public void clearWishlist() {
+        wishlistItems.clear();
     }
 
     /**

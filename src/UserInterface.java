@@ -27,6 +27,7 @@ public class UserInterface {
     private static final int RECEIVE_PAYMENT = 8;
     private static final int SHOW_CLIENT_DETAILS = 9;
     private static final int SHOW_TRANSACTIONS = 10;
+    private static final int REVIEW_WISHLIST = 11;
 
     /**
      * Creates the UserInterface.
@@ -163,7 +164,7 @@ public class UserInterface {
                                                 + " for help"));
 
                 if (value >= EXIT
-                        && value <= SHOW_TRANSACTIONS) {
+                    && value <= REVIEW_WISHLIST) {
 
                     return value;
                 }
@@ -184,7 +185,7 @@ public class UserInterface {
 
         System.out.println();
         System.out.println(
-                "Enter a number between 0 and " + SHOW_TRANSACTIONS + ":");
+            "Enter a number between 0 and " + REVIEW_WISHLIST + ":");
 
         System.out.println(
                 EXIT + " to Exit");
@@ -215,6 +216,7 @@ public class UserInterface {
         System.out.println(RECEIVE_PAYMENT + " to receive a client payment");
         System.out.println(SHOW_CLIENT_DETAILS + " to show a client's details and balance");
         System.out.println(SHOW_TRANSACTIONS + " to show a client's transactions");
+        System.out.println(REVIEW_WISHLIST + " to review a wishlist at checkout");
 
         System.out.println();
     }
@@ -387,28 +389,83 @@ public class UserInterface {
             return;
         }
 
+        displayWishlist(clientID, wishlist);
+    }
+
+    /** Reviews a wishlist and allows edits or additional products before fulfillment. */
+    public void reviewWishlist() {
+        int clientID = getNumber("Enter client ID");
+        List<WishlistItem> wishlist = storeSystem.getWishlistItems(clientID);
+        if (wishlist == null) {
+            System.out.println("Client not found.");
+            return;
+        }
+
+        while (true) {
+            wishlist = storeSystem.getWishlistItems(clientID);
+            displayWishlist(clientID, wishlist);
+            System.out.println("1 to change an item's quantity");
+            System.out.println("2 to add another product");
+            System.out.println("3 to finish review");
+            int action = getNumber("Choose review action:");
+
+            if (action == 1) {
+                if (wishlist.isEmpty()) {
+                    System.out.println("There are no wishlist items to change.");
+                    continue;
+                }
+                int productID = getNumber("Enter product ID to change");
+                int quantity = getNumber("Enter new quantity");
+                if (storeSystem.updateWishlistQuantity(clientID, productID, quantity)) {
+                    System.out.println("Wishlist quantity updated.");
+                } else {
+                    System.out.println("Could not update that wishlist item.");
+                }
+            } else if (action == 2) {
+                showProducts();
+                int productID = getNumber("Enter product ID to add");
+                int quantity = getNumber("Enter quantity");
+                if (storeSystem.addToWishlist(clientID, productID, quantity)) {
+                    System.out.println("Product added to wishlist.");
+                } else {
+                    System.out.println("Could not add product to wishlist.");
+                }
+            } else if (action == 3) {
+                List<OrderFulfillment> results = storeSystem.fillOrder(clientID);
+                if (results.isEmpty()) {
+                    System.out.println("Wishlist is empty; no order was submitted.");
+                } else {
+                    boolean invoiceCreated = false;
+                    for (OrderFulfillment result : results) {
+                        System.out.println(result);
+                        invoiceCreated |= result.getSuppliedQuantity() > 0;
+                    }
+                    if (invoiceCreated) {
+                        List<Invoice> invoices = storeSystem.getInvoices(clientID);
+                        System.out.println(invoices.get(invoices.size() - 1));
+                    } else {
+                        System.out.println("No invoice generated; no items were supplied.");
+                    }
+                    System.out.println("Order submitted; processed wishlist entries cleared.");
+                }
+                return;
+            } else {
+                System.out.println("Choose 1, 2 or 3.");
+            }
+        }
+    }
+
+    private void displayWishlist(int clientID, List<WishlistItem> wishlist) {
         System.out.println();
-        System.out.println(
-                "Wishlist for Client "
-                        + clientID);
-
-        System.out.println(
-                "---------------------");
-
-        if (wishlist.size() == 0) {
-
-            System.out.println(
-                    "Wishlist is empty.");
-
+        System.out.println("Wishlist for Client " + clientID);
+        System.out.println("---------------------");
+        if (wishlist.isEmpty()) {
+            System.out.println("Wishlist is empty.");
         } else {
-
-            for (WishlistItem item :
-                    wishlist) {
-
+            for (WishlistItem item : wishlist) {
                 System.out.println(item);
             }
         }
-
         System.out.println();
     }
 
@@ -490,6 +547,9 @@ public class UserInterface {
                             break;
                         case SHOW_TRANSACTIONS:
                             showTransactions();
+                            break;
+                        case REVIEW_WISHLIST:
+                            reviewWishlist();
                             break;
                     }
                 } catch (IllegalArgumentException exception) {

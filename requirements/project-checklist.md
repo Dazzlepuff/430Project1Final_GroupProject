@@ -9,10 +9,10 @@
 ## Features
 - [x] Create clients and products with unique IDs.
 - [x] Manage client wishlists; replace quantities for existing entries.
-- [ ] Review wishlist items at checkout; allow quantity changes and extra products.
-- [ ] Fill orders from stock; put shortages on each product's FIFO waitlist.
-- [ ] Clear processed wishlist entries to prevent duplicate orders.
-- [ ] Generate dated invoices for supplied items only; preserve unit prices.
+- [x] Review wishlist items at checkout; allow quantity changes and extra products.
+- [x] Fill orders from stock; put shortages on each product's FIFO waitlist.
+- [x] Clear processed wishlist entries to prevent duplicate orders.
+- [x] Generate dated invoices for supplied items only; preserve unit prices.
 - [x] Use `BigDecimal` for prices, balances, payments and transaction amounts.
 - [x] Support account debits/credits and record dated transactions.
 - [ ] Apply charges automatically when orders or waitlisted items are fulfilled.
