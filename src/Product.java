@@ -87,9 +87,31 @@ public class Product implements Serializable {
         return suppliedQuantity;
     }
 
+    /** Adds received units that remain after waitlist processing to stock. */
+    public void addStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Added stock must be positive.");
+        }
+        quantityInStock += quantity;
+    }
+
     /** Appends an unfilled request to this product's FIFO waitlist. */
     public void addWaitlistEntry(Client client, int quantity) {
         waitlistEntries.add(new WaitlistEntry(client, quantity));
+    }
+
+    /** Removes a waitlist entry once a shipment fully fulfills it. */
+    public boolean removeWaitlistEntry(WaitlistEntry entry) {
+        return waitlistEntries.remove(entry);
+    }
+
+    /** Returns the total quantity clients are waiting for. */
+    public int getTotalWaitlistedQuantity() {
+        int total = 0;
+        for (WaitlistEntry entry : waitlistEntries) {
+            total += entry.getRemainingQuantity();
+        }
+        return total;
     }
 
     /** Returns a read-only snapshot of this product's FIFO waitlist. */

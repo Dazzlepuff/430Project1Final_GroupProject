@@ -28,12 +28,42 @@ public class UserInterface {
     private static final int SHOW_CLIENT_DETAILS = 9;
     private static final int SHOW_TRANSACTIONS = 10;
     private static final int REVIEW_WISHLIST = 11;
+    private static final int RECEIVE_SHIPMENT = 12;
+    private static final int SHOW_PRODUCT_WAITLIST = 13;
+    private static final int SHOW_INVOICES = 14;
+    private static final int SHOW_OUTSTANDING_BALANCES = 15;
+    private static final int SAVE = 16;
+    private static final int REMOVE_FROM_WISHLIST = 17;
 
     /**
-     * Creates the UserInterface.
+     * Creates the UserInterface and offers to
+     * resume from previously saved data.
      */
     private UserInterface() {
-        storeSystem = StoreSystem.instance();
+
+        if (yesOrNo("Look for saved warehouse data and use it?")) {
+            retrieveSavedData();
+        } else {
+            storeSystem = StoreSystem.instance();
+        }
+    }
+
+    /** Reads a yes/no answer; only input starting with y or Y counts as yes. */
+    private boolean yesOrNo(String prompt) {
+        String answer = getToken(prompt + " (y/n)");
+        return answer.charAt(0) == 'y' || answer.charAt(0) == 'Y';
+    }
+
+    /** Loads saved data when available, otherwise starts a new warehouse. */
+    private void retrieveSavedData() {
+        StoreSystem saved = StoreSystem.retrieve();
+        if (saved == null) {
+            System.out.println("No saved data found; starting a new warehouse.");
+            storeSystem = StoreSystem.instance();
+        } else {
+            System.out.println("The warehouse has been retrieved from the file WarehouseData.");
+            storeSystem = saved;
+        }
     }
 
     /**
@@ -164,7 +194,7 @@ public class UserInterface {
                                                 + " for help"));
 
                 if (value >= EXIT
-                    && value <= REVIEW_WISHLIST) {
+                    && value <= REMOVE_FROM_WISHLIST) {
 
                     return value;
                 }
@@ -185,7 +215,7 @@ public class UserInterface {
 
         System.out.println();
         System.out.println(
-            "Enter a number between 0 and " + REVIEW_WISHLIST + ":");
+            "Enter a number between 0 and " + REMOVE_FROM_WISHLIST + ":");
 
         System.out.println(
                 EXIT + " to Exit");
@@ -217,6 +247,12 @@ public class UserInterface {
         System.out.println(SHOW_CLIENT_DETAILS + " to show a client's details and balance");
         System.out.println(SHOW_TRANSACTIONS + " to show a client's transactions");
         System.out.println(REVIEW_WISHLIST + " to review a wishlist at checkout");
+        System.out.println(RECEIVE_SHIPMENT + " to receive a product shipment");
+        System.out.println(SHOW_PRODUCT_WAITLIST + " to show a product's waitlist");
+        System.out.println(SHOW_INVOICES + " to show a client's invoices");
+        System.out.println(SHOW_OUTSTANDING_BALANCES + " to show clients that owe money");
+        System.out.println(SAVE + " to save the warehouse data");
+        System.out.println(REMOVE_FROM_WISHLIST + " to remove a product from a wishlist");
 
         System.out.println();
     }
@@ -505,6 +541,118 @@ public class UserInterface {
         }
     }
 
+    /** Receives a shipment: waitlist fills are invoiced/charged, leftovers restock. */
+    public void receiveShipment() {
+        int productID = getNumber("Enter product ID");
+        Product product = storeSystem.findProduct(productID);
+        if (product == null) {
+            System.out.println("Product not found.");
+            return;
+        }
+        int quantity = getNumber("Enter received quantity");
+        if (quantity <= 0) {
+            System.out.println("Received quantity must be positive.");
+            return;
+        }
+
+        List<ShipmentFulfillment> fulfillments =
+                storeSystem.receiveShipment(productID, quantity);
+        if (fulfillments.isEmpty()) {
+            System.out.println("No waitlisted requests; full shipment added to stock.");
+        } else {
+            System.out.println("Waitlist fulfillments:");
+            for (ShipmentFulfillment fulfillment : fulfillments) {
+                System.out.println(fulfillment);
+                System.out.println(fulfillment.getInvoice());
+            }
+        }
+        System.out.println(product);
+    }
+
+    /** Displays a product's FIFO waitlist and total waitlisted quantity. */
+    public void showProductWaitlist() {
+        int productID = getNumber("Enter product ID");
+        Product product = storeSystem.findProduct(productID);
+        if (product == null) {
+            System.out.println("Product not found.");
+            return;
+        }
+
+        List<WaitlistEntry> waitlist = storeSystem.getProductWaitlist(productID);
+        System.out.println();
+        System.out.println("Waitlist for " + product.getName()
+                + " (Product " + productID + ")");
+        System.out.println("--------------------------------");
+        if (waitlist.isEmpty()) {
+            System.out.println("Waitlist is empty.");
+        } else {
+            for (WaitlistEntry entry : waitlist) {
+                System.out.println(entry);
+            }
+            System.out.println("Total waitlisted quantity: "
+                    + product.getTotalWaitlistedQuantity());
+        }
+        System.out.println();
+    }
+
+    /** Displays each dated invoice for one client. */
+    public void showInvoices() {
+        int clientID = getNumber("Enter client ID");
+        Client client = storeSystem.findClient(clientID);
+        if (client == null) {
+            System.out.println("Client not found.");
+            return;
+        }
+
+        List<Invoice> invoices = storeSystem.getInvoices(clientID);
+        System.out.println();
+        System.out.println("Invoices for Client " + clientID
+                + " (" + client.getName() + ")");
+        System.out.println("--------------------------------");
+        if (invoices.isEmpty()) {
+            System.out.println("No invoices found.");
+        }
+        for (Invoice invoice : invoices) {
+            System.out.println(invoice);
+            System.out.println();
+        }
+    }
+
+    /** Displays every client that currently owes money. */
+    public void showOutstandingBalances() {
+        List<Client> owing = storeSystem.getClientsWithOutstandingBalance();
+        System.out.println();
+        System.out.println("Clients with Outstanding Balances");
+        System.out.println("---------------------------------");
+        if (owing.isEmpty()) {
+            System.out.println("No clients owe money.");
+        }
+        for (Client client : owing) {
+            System.out.println(client);
+        }
+        System.out.println();
+    }
+
+    /** Saves the warehouse, including ID counters, to the WarehouseData file. */
+    public void save() {
+        if (StoreSystem.save()) {
+            System.out.println("The warehouse has been saved to the file WarehouseData.");
+        } else {
+            System.out.println("The warehouse could not be saved.");
+        }
+    }
+
+    /** Removes a product from a client's wishlist (add/delete business process). */
+    public void removeFromWishlist() {
+        int clientID = getNumber("Enter client ID");
+        int productID = getNumber("Enter product ID");
+        if (storeSystem.removeFromWishlist(clientID, productID)) {
+            System.out.println("Product removed from wishlist.");
+        } else {
+            System.out.println("Could not remove product from wishlist.");
+        }
+    }
+
     /**
      * Processes commands until the user exits.
      */
@@ -551,6 +699,24 @@ public class UserInterface {
                         case REVIEW_WISHLIST:
                             reviewWishlist();
                             break;
+                        case RECEIVE_SHIPMENT:
+                            receiveShipment();
+                            break;
+                        case SHOW_PRODUCT_WAITLIST:
+                            showProductWaitlist();
+                            break;
+                        case SHOW_INVOICES:
+                            showInvoices();
+                            break;
+                        case SHOW_OUTSTANDING_BALANCES:
+                            showOutstandingBalances();
+                            break;
+                        case SAVE:
+                            save();
+                            break;
+                        case REMOVE_FROM_WISHLIST:
+                            removeFromWishlist();
+                            break;
                     }
                 } catch (IllegalArgumentException exception) {
                     System.out.println("Error: " + exception.getMessage());
@@ -573,8 +739,13 @@ public class UserInterface {
      */
     public static void main(String[] args) {
 
-        UserInterface
-                .instance()
-                .process();
+        try {
+            UserInterface
+                    .instance()
+                    .process();
+        } catch (NoSuchElementException exception) {
+            // End of input before startup finished.
+            System.out.println("Exiting Warehouse System.");
+        }
     }
 }

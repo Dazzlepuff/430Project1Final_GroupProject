@@ -11,6 +11,9 @@ public class StoreSystem implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /** Save file holding the serialized warehouse; reserved in .gitignore. */
+    private static final String SAVE_FILE = "WarehouseData";
+
     private static StoreSystem storeSystem;
 
     private List<Client> clients;
@@ -152,6 +155,14 @@ public class StoreSystem implements Serializable {
         return client;
     }
 
+    private Product requireProduct(int productID) {
+        Product product = findProduct(productID);
+        if (product == null) {
+            throw new IllegalArgumentException("Product not found.");
+        }
+        return product;
+    }
+
     /**
      * Searches for a product.
      *
@@ -220,6 +231,15 @@ public class StoreSystem implements Serializable {
         return client.updateWishlistItemQuantity(productID, quantity);
     }
 
+    /** Removes a product from a client's wishlist. */
+    public boolean removeFromWishlist(int clientID, int productID) {
+        Client client = findClient(clientID);
+        if (client == null) {
+            return false;
+        }
+        return client.removeWishlistItem(productID);
+    }
+
     /** Fulfills available stock and queues each shortage in product FIFO order. */
     public List<OrderFulfillment> fillOrder(int clientID) {
         Client client = requireClient(clientID);
@@ -245,10 +265,53 @@ public class StoreSystem implements Serializable {
         }
 
         if (!invoiceLines.isEmpty()) {
-            client.addInvoice(new Invoice(invoiceLines));
+            client.chargeInvoice("Order charge", new Invoice(invoiceLines));
         }
         client.clearWishlist();
         return Collections.unmodifiableList(results);
+    }
+
+    /**
+     * Processes a received shipment for a product. Waitlisted requests are
+     * filled first in FIFO order; each fill is invoiced and automatically
+     * charged to its client, partially filled requests stay queued, and
+     * leftover units are added to stock.
+     *
+     * @param productID product that arrived
+     * @param receivedQuantity units received
+     * @return read-only list of waitlist fulfillments, in FIFO order
+     */
+    public List<ShipmentFulfillment> receiveShipment(int productID, int receivedQuantity) {
+        Product product = requireProduct(productID);
+        if (receivedQuantity <= 0) {
+            throw new IllegalArgumentException("Received quantity must be positive.");
+        }
+
+        List<ShipmentFulfillment> fulfillments = new ArrayList<ShipmentFulfillment>();
+        int remainingShipment = receivedQuantity;
+
+        for (WaitlistEntry entry : product.getWaitlistEntries()) {
+            if (remainingShipment == 0) {
+                break;
+            }
+            int filledQuantity = Math.min(entry.getRemainingQuantity(), remainingShipment);
+            entry.fulfill(filledQuantity);
+            remainingShipment -= filledQuantity;
+            if (entry.getRemainingQuantity() == 0) {
+                product.removeWaitlistEntry(entry);
+            }
+
+            Invoice invoice = new Invoice(Collections.singletonList(
+                    new Invoice.LineItem(product, filledQuantity)));
+            entry.getClient().chargeInvoice("Shipment fulfillment charge", invoice);
+            fulfillments.add(new ShipmentFulfillment(entry.getClient(), product,
+                    filledQuantity, entry.getRemainingQuantity(), invoice));
+        }
+
+        if (remainingShipment > 0) {
+            product.addStock(remainingShipment);
+        }
+        return Collections.unmodifiableList(fulfillments);
     }
 
     /** Returns the client's dated invoices. */
@@ -296,6 +359,54 @@ public class StoreSystem implements Serializable {
      */
     public List<Product> getAllProducts() {
         return Collections.unmodifiableList(new ArrayList<Product>(products));
+    }
+
+    /** Returns the clients that currently owe money (positive balance). */
+    public List<Client> getClientsWithOutstandingBalance() {
+        List<Client> owing = new ArrayList<Client>();
+        for (Client client : clients) {
+            if (client.getBalance().signum() > 0) {
+                owing.add(client);
+            }
+        }
+        return Collections.unmodifiableList(owing);
+    }
+
+    /**
+     * Saves the warehouse, including all data and ID counters.
+     *
+     * @return true when the save succeeds
+     */
+    public static boolean save() {
+        try {
+            ObjectOutputStream output = new ObjectOutputStream(
+                    new FileOutputStream(SAVE_FILE));
+            output.writeObject(instance());
+            output.close();
+            return true;
+        } catch (IOException exception) {
+            return false;
+        }
+    }
+
+    /**
+     * Loads the saved warehouse, replacing the in-memory instance so data
+     * and ID counters continue from the saved state.
+     *
+     * @return restored StoreSystem, or null when no save could be read
+     */
+    public static StoreSystem retrieve() {
+        try {
+            ObjectInputStream input = new ObjectInputStream(
+                    new FileInputStream(SAVE_FILE));
+            storeSystem = (StoreSystem) input.readObject();
+            input.close();
+            return storeSystem;
+        } catch (IOException exception) {
+            return null;
+        } catch (ClassNotFoundException exception) {
+            return null;
+        }
     }
 
     /**

@@ -105,6 +105,12 @@ public class Client implements Serializable {
         invoices.add(invoice);
     }
 
+    /** Records a fulfillment invoice and automatically charges its total. */
+    public void chargeInvoice(String description, Invoice invoice) {
+        addInvoice(invoice);
+        recordTransaction(description, invoice.getTotal());
+    }
+
     public List<Invoice> getInvoices() {
         return Collections.unmodifiableList(new ArrayList<Invoice>(invoices));
     }
@@ -177,6 +183,15 @@ public class Client implements Serializable {
         }
         item.setQuantity(quantity);
         return true;
+    }
+
+    /** Removes a product from the wishlist; false when it is not listed. */
+    public boolean removeWishlistItem(int productID) {
+        WishlistItem item = findWishlistItem(productID);
+        if (item == null) {
+            return false;
+        }
+        return wishlistItems.remove(item);
     }
 
     /**
