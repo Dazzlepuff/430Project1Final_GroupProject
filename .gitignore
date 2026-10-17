@@ -6,5 +6,5 @@
 # Local VS Code settings contain this computer's JDK path
 /.vscode/settings.json
 
-# Future warehouse save file
-/WarehouseData
+# Warehouse save file (created in the working directory, e.g. root or src)
+WarehouseData

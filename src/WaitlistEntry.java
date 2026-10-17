@@ -30,4 +30,10 @@ public final class WaitlistEntry implements Serializable {
         }
         remainingQuantity -= quantity;
     }
+
+    @Override
+    public String toString() {
+        return "Client " + client.getClientID() + " (" + client.getName()
+                + "): waiting for " + remainingQuantity;
+    }
 }
